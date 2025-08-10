@@ -1,6 +1,4 @@
 #!/bin/bash
-# Copyright (c) Meta Platforms, Inc. and affiliates.
-
 #SBATCH --job-name=env_creation
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
@@ -23,19 +21,20 @@ current_date=$(date +%y%m%d)
 # Create environment name with the current date
 env_prefix=blt_$current_date
 
-# Create the conda environment
+# Create the uv virtual environment
+uv venv $env_prefix --python 3.12
 
-source $CONDA_ROOT/etc/profile.d/conda.sh
-conda create -n $env_prefix python=3.12 -y
-conda activate $env_prefix
+# Activate the virtual environment
+source $env_prefix/bin/activate
 
 echo "Currently in env $(which python)"
 
-# Install packages
-pip install --pre torch --index-url https://download.pytorch.org/whl/nightly/cu121
-pip install ninja
-pip install -v -U git+https://github.com/facebookresearch/xformers.git@de742ec3d64bd83b1184cc043e541f15d270c148
-pip install -r requirements.txt
+# Install dependency groups (if using pyproject.toml)
+uv pip install --group pre_build --no-build-isolation
+uv pip install --group compile_xformers --no-build-isolation
+
+# Sync all dependencies
+uv sync
 
 # End timer
 end_time=$(date +%s)
