@@ -379,7 +379,7 @@ def train(args: TrainArgs):
             batch = next(batch_iterator)
             batch_x = torch.from_numpy(
                 batch.x,
-            ).cuda()
+            ).long().cuda()
             batch_y = torch.from_numpy(batch.y).cuda()
             if batch.patch_lengths is None:
                 batch_patch_lengths = None
