@@ -387,15 +387,15 @@ def train(args: TrainArgs):
                 batch_patch_lengths = torch.from_numpy(batch.patch_lengths).cuda()
             mask = None if batch.mask is None else torch.from_numpy(batch.mask).cuda()
 
-            if args.data.tokenizer_args.name in ["bytes", "blt"]:
+            if args.data.tokenizer_args.name in ["bytes", "blt", "pcap-blt"]:
                 n_bytes += batch_y.numel() if mask is None else mask.sum()
             elif args.data.tokenizer_args.name in ["sp", "tiktoken"]:
                 for example in batch.y:
                     target_tokens = tokenizer.decode(example.tolist(), cut_at_eos=False)
                     n_bytes += (
-                        len(bytes(target_tokens, encoding="utf-8", errors="ignore"))
-                        + sum(example == tokenizer.eos_id)
-                        + sum(example == tokenizer.bos_id)
+                            len(bytes(target_tokens, encoding="utf-8", errors="ignore"))
+                            + sum(example == tokenizer.eos_id)
+                            + sum(example == tokenizer.bos_id)
                     )
             else:
                 raise ValueError(
