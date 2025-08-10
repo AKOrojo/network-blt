@@ -170,3 +170,4 @@ jobs_parallel-copy/
 wandb/
 *.ipynb
 hf-weights/
+/setup/terashuf/terashuf
