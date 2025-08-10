@@ -15,12 +15,6 @@ set -e
 # Start timer
 start_time=$(date +%s)
 
-# Get the current date
-current_date=$(date +%y%m%d)
-
-# Create environment name with the current date
-env_prefix=blt_$current_date
-
 # Get the script's directory and navigate to the project root
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
@@ -34,10 +28,10 @@ cd "$PROJECT_ROOT"
 echo "Current working directory: $(pwd)"
 
 # Create the uv virtual environment
-uv venv $env_prefix --python 3.12
+uv venv --python 3.12
 
 # Activate the virtual environment
-source $env_prefix/bin/activate
+source .venv/bin/activate
 
 echo "Currently in env $(which python)"
 
