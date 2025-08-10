@@ -21,3 +21,4 @@ typer
 rich
 fsspec[full]
 huggingface-hub==0.30.*
+dpkt
