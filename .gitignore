@@ -171,3 +171,6 @@ wandb/
 *.ipynb
 hf-weights/
 /setup/terashuf/terashuf
+terashuf
+data/
+.idea/
