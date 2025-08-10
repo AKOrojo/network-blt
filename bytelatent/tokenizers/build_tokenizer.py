@@ -5,6 +5,7 @@ from typing import Any
 from pydantic import BaseModel
 
 from bytelatent.tokenizers.blt_tokenizer import BltTokenizer
+from bytelatent.tokenizers.pcap_byte_tokenizer import BltPcapTokenizer
 from bytelatent.tokenizers.tiktoken_tokenizer import TikTokenTokenizer
 
 try:
@@ -42,6 +43,9 @@ class MockTokenizer(Tokenizer):
     ) -> tuple[list[str]]:
         raise NotImplementedError()
 
+    def get_vocab_size(self) -> int:
+        raise NotImplementedError()
+
 
 class TokenizerArgs(BaseModel):
     name: str = "bytes"
@@ -62,5 +66,7 @@ class TokenizerArgs(BaseModel):
         elif self.name == "tiktoken":
             assert has_tiktoken, "tiktoken not installed"
             return TikTokenTokenizer(**init_kwargs)
+        elif self.name == "pcap-blt":
+            return BltPcapTokenizer(**init_kwargs)
         else:
             raise NotImplementedError(f"{self.name} tokenizer type is not implemented")

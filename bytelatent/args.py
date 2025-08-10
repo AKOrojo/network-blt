@@ -149,6 +149,9 @@ class DataloaderArgs(BaseModel):
 
     add_patches: bool = True
 
+    use_pcap_data: bool = False
+    pcap_data_path: str | None = None
+
     tokenizer_args: TokenizerArgs = TokenizerArgs()
     patcher_args: PatcherArgs = PatcherArgs()
 
@@ -191,42 +194,51 @@ class DataloaderArgs(BaseModel):
     def build_from_rank(
         self, rank: int, world_size: int
     ) -> StatefulIterator[Batch, Any]:
-        source_to_sequence_iterators = self._create_sequence_iterators(rank, world_size)
-        weight_rng_state = get_rng_state(self.seed + 1, rank, world_size)
-        sampling_iterator = SamplingIterator(
-            rng_state=weight_rng_state,
-            source_to_weight=self.sources,
-            source_to_iterator=source_to_sequence_iterators,
-        )
-        tokenizer = self.tokenizer_args.build()
-        if self.tokenizer_args.name == "bytes":
-            # TODO: Check this with Artidoro
-            pad_id = 0
-        else:
-            pad_id = tokenizer.boe_id
-        packing_args = PackingArgs(
-            batch_size=self.batch_size,
-            seq_len=self.seq_len,
-            pad_id=pad_id,
-            max_length=self.max_encoder_seq_length,
-            pad_to_max_length=self.pad_to_max_length,
-            enable_byte_ngrams=self.enable_byte_ngrams,
-            packing_mode=(
-                PackingMode.BYTES
-                if self.patcher_args.patching_mode == PatchingModeEnum.byte
-                else PackingMode.PATCHING
-            ),
-        )
-        packing_iterator = PackingIterator(sampling_iterator, packing_args=packing_args)
-        if self.load_async:
-            mp_iterator = MultiprocessIterator(
-                packing_iterator,
-                n_batches_to_prefetch=self.prefetch_size,
-                persist_type=self.async_persist_type,
+        if self.use_pcap_data:
+            # Use PCAP data iterator
+            from bytelatent.data.iterators.pcap_iterator import PcapIterator
+            return PcapIterator(
+                data_path=self.pcap_data_path,
+                batch_size=self.batch_size,
+                split="train"
             )
-            return mp_iterator
         else:
-            return packing_iterator
+            source_to_sequence_iterators = self._create_sequence_iterators(rank, world_size)
+            weight_rng_state = get_rng_state(self.seed + 1, rank, world_size)
+            sampling_iterator = SamplingIterator(
+                rng_state=weight_rng_state,
+                source_to_weight=self.sources,
+                source_to_iterator=source_to_sequence_iterators,
+            )
+            tokenizer = self.tokenizer_args.build()
+            if self.tokenizer_args.name == "bytes":
+                # TODO: Check this with Artidoro
+                pad_id = 0
+            else:
+                pad_id = tokenizer.boe_id
+            packing_args = PackingArgs(
+                batch_size=self.batch_size,
+                seq_len=self.seq_len,
+                pad_id=pad_id,
+                max_length=self.max_encoder_seq_length,
+                pad_to_max_length=self.pad_to_max_length,
+                enable_byte_ngrams=self.enable_byte_ngrams,
+                packing_mode=(
+                    PackingMode.BYTES
+                    if self.patcher_args.patching_mode == PatchingModeEnum.byte
+                    else PackingMode.PATCHING
+                ),
+            )
+            packing_iterator = PackingIterator(sampling_iterator, packing_args=packing_args)
+            if self.load_async:
+                mp_iterator = MultiprocessIterator(
+                    packing_iterator,
+                    n_batches_to_prefetch=self.prefetch_size,
+                    persist_type=self.async_persist_type,
+                )
+                return mp_iterator
+            else:
+                return packing_iterator
 
 
 class LMHarnessArgs(BaseModel):

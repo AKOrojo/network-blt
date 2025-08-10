@@ -1,0 +1,53 @@
+dump_dir: /tmp/blt-pcap-entropy
+name: "pcap_entropy"
+steps: 100_000
+seed: 42
+
+optim:
+  lr: 4e-04
+  warmup: 500
+  lr_min_ratio: 0.1
+  clip: 10.0
+
+distributed:
+  fsdp_type: full_shard
+  model_dtype: bf16
+  matmul_allow_tf32: false
+  selective_activation_checkpointing: false
+  tp_size: 1
+
+train_entropy_model: true
+model: null
+entropy_model:
+  dim: 768
+  n_layers: 14
+  n_heads: 12
+  max_seqlen: 8192
+  vocab_size: 260  # 256 bytes + special tokens (BOE, BOS, EOS, PKT_ID)
+  ffn_dim_multiplier: 1.0
+  sliding_window: 512
+  attn_bias_type: "local_block_causal"
+  attn_impl: "xformers"
+
+data:
+  # Use PCAP data instead of text
+  use_pcap_data: true
+  pcap_data_path: "/home/abanisenioluwa_oroj1/PycharmProjects/network-blt/data"  # Output from your prepare script
+  batch_size: 8
+  seq_len: 8192  # Should match your chunk_size from prepare script
+
+  # Disable text-specific features
+  add_patches: false
+  tokenizer_args:
+    name: "pcap-blt"  # Use mock tokenizer since data is already tokenized
+
+checkpoint:
+  dump:
+    every: 1000
+    keep: 3
+  eval:
+    every: 5000
+    keep: -1
+
+logging:
+  freq: 10
